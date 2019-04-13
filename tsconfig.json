@@ -1,0 +1,21 @@
+{
+    "compilerOptions": {
+      "allowJs": true,
+      "module": "esnext",
+      "moduleResolution": "node",
+      "noEmit": true,
+      "pretty": true,
+      "resolveJsonModule": true,
+      "strict": true,
+      "target": "esnext",
+      "lib": [
+        "esnext"
+      ],
+      "plugins": [
+        {
+          "name": "typescript-deno-plugin"
+          // "name": "/source/deno/typescript-deno-plugin"
+        }
+      ]
+    }
+  }

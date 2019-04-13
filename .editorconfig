@@ -1,0 +1,27 @@
+; top-most EditorConfig file
+root = true
+
+; Unix-style newlines
+[*]
+indent_style = space
+indent_size = 4
+end_of_line = lf
+charset = utf-8
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+[*.md]
+trim_trailing_whitespace = false
+
+[*.json]
+indent_size = 2
+insert_final_newline = false
+
+[*.{t,j}s?]
+trim_trailing_whitespace = false
+
+[*.d.ts]
+indent_size = 2
+
+[*.lock]
+indent_size = 2

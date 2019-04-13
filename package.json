@@ -1,0 +1,22 @@
+{
+  "name": "deno-yaml",
+  "description": "YAML parser / dumper for Deno",
+  "version": "1.0.0",
+  "main": "null",
+  "repository": "git@github.com:bios21/deno-yaml.git",
+  "author": "Lilian Saget-Lethias <lilian.sagetlethias@gmail.com>",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "postinstall": "yes | cp -fi deno.d.ts.dist deno.d.ts && deno --types | sed -f deno.d.ts.sed >> deno.d.ts"
+  },
+  "devDependencies": {
+    "prettier": "^1.17.0",
+    "tslint": "^5.15.0",
+    "tslint-config-airbnb": "^5.11.1",
+    "tslint-config-prettier": "^1.18.0",
+    "tslint-plugin-prettier": "^2.0.1",
+    "typescript": "^3.4.3",
+    "typescript-deno-plugin": "^1.1.0"
+  }
+}

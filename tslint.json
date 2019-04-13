@@ -1,0 +1,88 @@
+{
+    "extends": [
+      "tslint:latest",
+      "tslint-plugin-prettier",
+      "tslint-config-airbnb",
+      "tslint-config-prettier"
+    ],
+    "rules": {
+      "prettier": [
+        true,
+        {
+          "tabWidth": 4,
+          "trailingComma": "all",
+          "singleQuote": true,
+          "printWidth": 120,
+          "parser": "typescript"
+        }
+      ],
+      "quotemark": [
+        true,
+        "single",
+        "avoid-escape",
+        "avoid-template",
+        "jsx-double"
+      ],
+      "interface-name": false,
+      "semicolon": [
+        true,
+        "always",
+        "ignore-interfaces"
+      ],
+      "indent": [
+        true,
+        "spaces"
+      ],
+      "member-ordering": [
+        true,
+        {
+          "order": [
+            "private-static-field",
+            "protected-static-field",
+            "public-static-field",
+            "private-instance-field",
+            "protected-instance-field",
+            "public-instance-field",
+            "private-constructor",
+            "protected-constructor",
+            "public-constructor",
+            "private-static-method",
+            "protected-static-method",
+            "public-static-method",
+            "private-instance-method",
+            "protected-instance-method",
+            "public-instance-method"
+          ]
+        }
+      ],
+      "no-namespace": false,
+      "no-string-literal": false,
+      "variable-name": false,
+      "no-empty": false,
+      "one-variable-per-declaration": false,
+      "forin": false,
+      "no-var-requires": false,
+      "max-classes-per-file": false,
+      "no-implicit-dependencies": false,
+      "no-trailing-whitespace": [
+        true,
+        "ignore-comments",
+        "ignore-jsdoc"
+      ],
+      "no-submodule-imports": false,
+      "no-unused-expression": false,
+      "no-increment-decrement": false,
+      "function-name": false,
+      "import-name": false,
+      "no-parameter-reassignment": false,
+      "prefer-array-literal": false,
+      "no-default-export": true,
+      "object-literal-sort-keys": [
+        true,
+        "shorthand-first"
+      ],
+      "ban-ts-ignore": true,
+      "no-boolean-literal-compare": false,
+      "no-console": false
+    }
+  }
