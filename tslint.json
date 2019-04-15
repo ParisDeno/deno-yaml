@@ -83,6 +83,7 @@
       ],
       "ban-ts-ignore": true,
       "no-boolean-literal-compare": false,
-      "no-console": false
+      "no-console": false,
+      "no-bitwise": false
     }
   }

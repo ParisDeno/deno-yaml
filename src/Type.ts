@@ -1,14 +1,18 @@
 export type KindType = 'sequence' | 'scalar' | 'mapping';
-type RepresentFn = (data: object) => any;
+export type StyleVariant = 'lowercase' | 'uppercase' | 'camelcase' | 'decimal';
+type RepresentFn = (data: any, style?: StyleVariant) => any;
+
+const DEFAULT_RESOLVE = () => true;
+const DEFAULT_CONSTRUCT = (data: any) => data;
 
 interface TypeOptions {
     kind: KindType;
-    resolve: (data?: any) => boolean;
-    construct: (data?: any) => any;
+    resolve?: (data: any) => boolean;
+    construct?: (data: string) => any;
     instanceOf?: object;
     predicate?: (data: object) => boolean;
     represent?: RepresentFn | ObjBoxed<RepresentFn>;
-    defaultStyle?: string;
+    defaultStyle?: StyleVariant;
     styleAliases?: { [x: string]: any };
 }
 
@@ -30,8 +34,8 @@ export class Type {
         this.tag = checkTagFormat(tag);
         if (options) {
             this.kind = options.kind;
-            this.resolve = options.resolve;
-            this.construct = options.construct;
+            this.resolve = options.resolve || DEFAULT_RESOLVE;
+            this.construct = options.construct || DEFAULT_CONSTRUCT;
             this.instanceOf = options.instanceOf;
             this.predicate = options.predicate;
             this.represent = options.represent;

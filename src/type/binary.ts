@@ -1,8 +1,6 @@
-import { Type } from '../Type';
+import { Type } from '../Type.ts';
 
 const { Buffer } = Deno;
-
-// tslint:disable:no-bitwise
 
 // [ 64, 65, 66 ] -> [ padding, CR, LF ]
 const BASE64_MAP = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=\n\r';
@@ -33,16 +31,15 @@ function resolveYamlBinary(data: any) {
     return bitlen % 8 === 0;
 }
 
-function constructYamlBinary(data) {
-    let tailbits;
+function constructYamlBinary(data: string) {
     const input = data.replace(/[\r\n=]/g, ''); // remove CR/LF & padding to simplify scan
     const max = input.length;
     const map = BASE64_MAP;
-    let bits = 0;
-    const result = new Uint8Array();
 
     // Collect by 6*4 bits (3 bytes)
 
+    const result = [];
+    let bits = 0;
     for (let idx = 0; idx < max; idx++) {
         if (idx % 4 === 0 && idx) {
             result.push((bits >> 16) & 0xff);
@@ -55,7 +52,7 @@ function constructYamlBinary(data) {
 
     // Dump tail
 
-    tailbits = (max % 4) * 6;
+    const tailbits = (max % 4) * 6;
 
     if (tailbits === 0) {
         result.push((bits >> 16) & 0xff);
@@ -68,20 +65,18 @@ function constructYamlBinary(data) {
         result.push((bits >> 4) & 0xff);
     }
 
-    return new Buffer(result);
+    return new Buffer(new Uint8Array(result));
 }
 
-function representYamlBinary(object /*, style*/) {
-    let result = '',
-        bits = 0,
-        idx,
-        tail,
-        max = object.length,
-        map = BASE64_MAP;
+function representYamlBinary(object: Uint8Array) {
+    const max = object.length;
+    const map = BASE64_MAP;
 
     // Convert every three bytes to 4 ASCII characters.
 
-    for (idx = 0; idx < max; idx++) {
+    let result = '';
+    let bits = 0;
+    for (let idx = 0; idx < max; idx++) {
         if (idx % 3 === 0 && idx) {
             result += map[(bits >> 18) & 0x3f];
             result += map[(bits >> 12) & 0x3f];
@@ -94,7 +89,7 @@ function representYamlBinary(object /*, style*/) {
 
     // Dump tail
 
-    tail = max % 3;
+    const tail = max % 3;
 
     if (tail === 0) {
         result += map[(bits >> 18) & 0x3f];
@@ -116,14 +111,22 @@ function representYamlBinary(object /*, style*/) {
     return result;
 }
 
-function isBinary(object) {
-    return Buffer.isBuffer(object);
+function isBinary(obj: any): obj is Deno.Buffer {
+    const buf = new Buffer();
+    try {
+        buf.readFromSync(obj as Deno.Buffer);
+        return true;
+    } catch {
+        return false;
+    } finally {
+        buf.reset();
+    }
 }
 
 export const binary = new Type('tag:yaml.org,2002:binary', {
-    kind: 'scalar',
-    resolve: resolveYamlBinary,
     construct: constructYamlBinary,
+    kind: 'scalar',
     predicate: isBinary,
     represent: representYamlBinary,
+    resolve: resolveYamlBinary,
 });
