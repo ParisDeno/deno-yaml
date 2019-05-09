@@ -8,7 +8,7 @@
   "license": "MIT",
   "private": true,
   "scripts": {
-    "postinstall": "yes | cp -fi deno.d.ts.dist deno.d.ts && deno --types | sed -f deno.d.ts.sed >> deno.d.ts"
+    "postinstall": "yes | cp -fi deno.d.ts.dist deno.d.ts && deno types | sed -f deno.d.ts.sed >> deno.d.ts"
   },
   "devDependencies": {
     "prettier": "^1.17.0",

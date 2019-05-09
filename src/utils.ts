@@ -26,3 +26,7 @@ export function repeat(str: string, count: number) {
 export function isNegativeZero(i: number) {
     return i === 0 && Number.NEGATIVE_INFINITY === 1 / i;
 }
+
+export interface ArrayObject<T> {
+    [P: string]: T;
+}

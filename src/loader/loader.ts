@@ -1,7 +1,13 @@
+// tslint:disable:no-conditional-assignment
 import { YAMLError } from '../error/YAMLError';
-import { Mark } from './Mark.ts';
-import { DEFAULT_FULL_SCHEMA, DEFAULT_SAFE_SCHEMA } from './schema/mod.ts';
-import * as common from './utils.ts';
+import { Mark } from '../Mark';
+import { SchemaDefinition } from '../Schema.ts';
+import { DEFAULT_FULL_SCHEMA, DEFAULT_SAFE_SCHEMA } from '../schema/mod.ts';
+import { Type } from '../Type.ts';
+import * as common from '../utils.ts';
+import { LoaderState, LoaderStateOptions, ResultType } from './LoaderState.ts';
+
+type ArrayObject<T> = common.ArrayObject<T>;
 
 const _hasOwnProperty = Object.prototype.hasOwnProperty;
 
@@ -41,13 +47,11 @@ function is_FLOW_INDICATOR(c: number) {
 }
 
 function fromHexCode(c: number) {
-    let lc;
-
     if (0x30 /* 0 */ <= c && c <= 0x39 /* 9 */) {
         return c - 0x30;
     }
 
-    lc = c | 0x20;
+    const lc = c | 0x20;
 
     if (0x61 /* a */ <= lc && lc <= 0x66 /* f */) {
         return lc - 0x61 + 10;
@@ -116,38 +120,6 @@ for (let i = 0; i < 256; i++) {
     simpleEscapeMap[i] = simpleEscapeSequence(i);
 }
 
-function State(input, options) {
-    this.input = input;
-
-    this.filename = options['filename'] || null;
-    this.schema = options['schema'] || DEFAULT_FULL_SCHEMA;
-    this.onWarning = options['onWarning'] || null;
-    this.legacy = options['legacy'] || false;
-    this.json = options['json'] || false;
-    this.listener = options['listener'] || null;
-
-    this.implicitTypes = this.schema.compiledImplicit;
-    this.typeMap = this.schema.compiledTypeMap;
-
-    this.length = input.length;
-    this.position = 0;
-    this.line = 0;
-    this.lineStart = 0;
-    this.lineIndent = 0;
-
-    this.documents = [];
-
-    /*
-  this.version;
-  this.checkLineBreaks;
-  this.tagMap;
-  this.anchorMap;
-  this.tag;
-  this.anchor;
-  this.kind;
-  this.result;*/
-}
-
 function generateError(state, message) {
     return new YAMLError(
         message,
@@ -213,7 +185,7 @@ const directiveHandlers = {
         }
 
         if (_hasOwnProperty.call(state.tagMap, handle)) {
-            throwError(state, 'there is a previously declared suffix for "' + handle + '" tag handle');
+            throwError(state, `there is a previously declared suffix for "${handle}" tag handle`);
         }
 
         if (!PATTERN_TAG_URI.test(prefix)) {
@@ -224,39 +196,34 @@ const directiveHandlers = {
     },
 };
 
-function captureSegment(state, start, end, checkJson) {
-    let _position, _length, _character, _result;
-
+function captureSegment(state: LoaderState, start: number, end: number, checkJson: boolean) {
+    let result: string;
     if (start < end) {
-        _result = state.input.slice(start, end);
+        result = state.input.slice(start, end);
 
         if (checkJson) {
-            for (_position = 0, _length = _result.length; _position < _length; _position += 1) {
-                _character = _result.charCodeAt(_position);
-                if (!(_character === 0x09 || (0x20 <= _character && _character <= 0x10ffff))) {
+            for (let position = 0, length = result.length; position < length; position++) {
+                const character = result.charCodeAt(position);
+                if (!(character === 0x09 || (0x20 <= character && character <= 0x10ffff))) {
                     throwError(state, 'expected valid JSON character');
                 }
             }
-        } else if (PATTERN_NON_PRINTABLE.test(_result)) {
+        } else if (PATTERN_NON_PRINTABLE.test(result)) {
             throwError(state, 'the stream contains non-printable characters');
         }
 
-        state.result += _result;
+        state.result += result;
     }
 }
 
-function mergeMappings(state, destination, source, overridableKeys) {
-    let sourceKeys, key, index, quantity;
-
+function mergeMappings(state: LoaderState, destination: {}, source: {}, overridableKeys: ArrayObject<boolean>) {
     if (!common.isObject(source)) {
         throwError(state, 'cannot merge mappings; the provided source object is unacceptable');
     }
 
-    sourceKeys = Object.keys(source);
-
-    for (index = 0, quantity = sourceKeys.length; index < quantity; index += 1) {
-        key = sourceKeys[index];
-
+    const keys = Object.keys(source);
+    for (let i = 0, len = keys.length; i < len; i++) {
+        const key = keys[i];
         if (!_hasOwnProperty.call(destination, key)) {
             destination[key] = source[key];
             overridableKeys[key] = true;
@@ -264,16 +231,23 @@ function mergeMappings(state, destination, source, overridableKeys) {
     }
 }
 
-function storeMappingPair(state, _result, overridableKeys, keyTag, keyNode, valueNode, startLine, startPos) {
-    let index, quantity;
-
+function storeMappingPair(
+    state: LoaderState,
+    result: {},
+    overridableKeys: ArrayObject<boolean>,
+    keyTag: string,
+    keyNode: any,
+    valueNode: {},
+    startLine?: number,
+    startPos?: number,
+) {
     // The output is a plain object here, so keys can only be strings.
     // We need to convert keyNode to a string, but doing so can hang the process
     // (deeply nested arrays that explode exponentially using aliases).
     if (Array.isArray(keyNode)) {
         keyNode = Array.prototype.slice.call(keyNode);
 
-        for (index = 0, quantity = keyNode.length; index < quantity; index += 1) {
+        for (let index = 0, quantity = keyNode.length; index < quantity; index++) {
             if (Array.isArray(keyNode[index])) {
                 throwError(state, 'nested arrays are not supported inside keys');
             }
@@ -293,29 +267,29 @@ function storeMappingPair(state, _result, overridableKeys, keyTag, keyNode, valu
 
     keyNode = String(keyNode);
 
-    if (_result === null) {
-        _result = {};
+    if (result === null) {
+        result = {};
     }
 
     if (keyTag === 'tag:yaml.org,2002:merge') {
         if (Array.isArray(valueNode)) {
-            for (index = 0, quantity = valueNode.length; index < quantity; index += 1) {
-                mergeMappings(state, _result, valueNode[index], overridableKeys);
+            for (let index = 0, quantity = valueNode.length; index < quantity; index++) {
+                mergeMappings(state, result, valueNode[index], overridableKeys);
             }
         } else {
-            mergeMappings(state, _result, valueNode, overridableKeys);
+            mergeMappings(state, result, valueNode, overridableKeys);
         }
     } else {
-        if (!state.json && !_hasOwnProperty.call(overridableKeys, keyNode) && _hasOwnProperty.call(_result, keyNode)) {
+        if (!state.json && !_hasOwnProperty.call(overridableKeys, keyNode) && _hasOwnProperty.call(result, keyNode)) {
             state.line = startLine || state.line;
             state.position = startPos || state.position;
             throwError(state, 'duplicated mapping key');
         }
-        _result[keyNode] = valueNode;
+        result[keyNode] = valueNode;
         delete overridableKeys[keyNode];
     }
 
-    return _result;
+    return result;
 }
 
 function readLineBreak(state) {
@@ -409,20 +383,10 @@ function writeFoldedLines(state, count) {
     }
 }
 
-function readPlainScalar(state, nodeIndent, withinFlowCollection) {
-    let preceding,
-        following,
-        captureStart,
-        captureEnd,
-        hasPendingContent,
-        _line,
-        _lineStart,
-        _lineIndent,
-        _kind = state.kind,
-        _result = state.result,
-        ch;
-
-    ch = state.input.charCodeAt(state.position);
+function readPlainScalar(state: LoaderState, nodeIndent: number, withinFlowCollection: boolean) {
+    const kind = state.kind;
+    const result = state.result;
+    let ch = state.input.charCodeAt(state.position);
 
     if (
         is_WS_OR_EOL(ch) ||
@@ -442,6 +406,7 @@ function readPlainScalar(state, nodeIndent, withinFlowCollection) {
         return false;
     }
 
+    let following: number;
     if (ch === 0x3f /* ? */ || ch === 0x2d /* - */) {
         following = state.input.charCodeAt(state.position + 1);
 
@@ -452,9 +417,10 @@ function readPlainScalar(state, nodeIndent, withinFlowCollection) {
 
     state.kind = 'scalar';
     state.result = '';
-    captureStart = captureEnd = state.position;
-    hasPendingContent = false;
-
+    let captureEnd: number,
+        captureStart = (captureEnd = state.position);
+    let hasPendingContent = false;
+    let line = 0;
     while (ch !== 0) {
         if (ch === 0x3a /* : */) {
             following = state.input.charCodeAt(state.position + 1);
@@ -463,7 +429,7 @@ function readPlainScalar(state, nodeIndent, withinFlowCollection) {
                 break;
             }
         } else if (ch === 0x23 /* # */) {
-            preceding = state.input.charCodeAt(state.position - 1);
+            const preceding = state.input.charCodeAt(state.position - 1);
 
             if (is_WS_OR_EOL(preceding)) {
                 break;
@@ -474,9 +440,9 @@ function readPlainScalar(state, nodeIndent, withinFlowCollection) {
         ) {
             break;
         } else if (is_EOL(ch)) {
-            _line = state.line;
-            _lineStart = state.lineStart;
-            _lineIndent = state.lineIndent;
+            line = state.line;
+            const lineStart = state.lineStart;
+            const lineIndent = state.lineIndent;
             skipSeparationSpace(state, false, -1);
 
             if (state.lineIndent >= nodeIndent) {
@@ -485,16 +451,16 @@ function readPlainScalar(state, nodeIndent, withinFlowCollection) {
                 continue;
             } else {
                 state.position = captureEnd;
-                state.line = _line;
-                state.lineStart = _lineStart;
-                state.lineIndent = _lineIndent;
+                state.line = line;
+                state.lineStart = lineStart;
+                state.lineIndent = lineIndent;
                 break;
             }
         }
 
         if (hasPendingContent) {
             captureSegment(state, captureStart, captureEnd, false);
-            writeFoldedLines(state, state.line - _line);
+            writeFoldedLines(state, state.line - line);
             captureStart = captureEnd = state.position;
             hasPendingContent = false;
         }
@@ -512,8 +478,8 @@ function readPlainScalar(state, nodeIndent, withinFlowCollection) {
         return true;
     }
 
-    state.kind = _kind;
-    state.result = _result;
+    state.kind = kind;
+    state.result = result;
     return false;
 }
 
@@ -558,10 +524,8 @@ function readSingleQuotedScalar(state, nodeIndent) {
     throwError(state, 'unexpected end of the stream within a single quoted scalar');
 }
 
-function readDoubleQuotedScalar(state, nodeIndent) {
-    let captureStart, captureEnd, hexLength, hexResult, tmp, ch;
-
-    ch = state.input.charCodeAt(state.position);
+function readDoubleQuotedScalar(state: LoaderState, nodeIndent: number) {
+    let ch = state.input.charCodeAt(state.position);
 
     if (ch !== 0x22 /* " */) {
         return false;
@@ -570,8 +534,9 @@ function readDoubleQuotedScalar(state, nodeIndent) {
     state.kind = 'scalar';
     state.result = '';
     state.position++;
-    captureStart = captureEnd = state.position;
-
+    let captureEnd: number,
+        captureStart = (captureEnd = state.position);
+    let tmp: number;
     while ((ch = state.input.charCodeAt(state.position)) !== 0) {
         if (ch === 0x22 /* " */) {
             captureSegment(state, captureStart, state.position, true);
@@ -590,8 +555,8 @@ function readDoubleQuotedScalar(state, nodeIndent) {
                 state.result += simpleEscapeMap[ch];
                 state.position++;
             } else if ((tmp = escapedHexLen(ch)) > 0) {
-                hexLength = tmp;
-                hexResult = 0;
+                let hexLength = tmp;
+                let hexResult = 0;
 
                 for (; hexLength > 0; hexLength--) {
                     ch = state.input.charCodeAt(++state.position);
@@ -626,43 +591,38 @@ function readDoubleQuotedScalar(state, nodeIndent) {
     throwError(state, 'unexpected end of the stream within a double quoted scalar');
 }
 
-function readFlowCollection(state, nodeIndent) {
-    let readNext = true,
-        _line,
-        _tag = state.tag,
-        _result,
-        _anchor = state.anchor,
-        following,
-        terminator,
-        isPair,
-        isExplicitPair,
-        isMapping,
-        overridableKeys = {},
-        keyNode,
-        keyTag,
-        valueNode,
-        ch;
-
-    ch = state.input.charCodeAt(state.position);
-
+function readFlowCollection(state: LoaderState, nodeIndent: number) {
+    let ch = state.input.charCodeAt(state.position);
+    let terminator: number;
+    let isMapping = true;
+    let result: ResultType = {};
     if (ch === 0x5b /* [ */) {
         terminator = 0x5d; /* ] */
         isMapping = false;
-        _result = [];
+        result = [];
     } else if (ch === 0x7b /* { */) {
         terminator = 0x7d; /* } */
-        isMapping = true;
-        _result = {};
     } else {
         return false;
     }
 
     if (state.anchor !== null) {
-        state.anchorMap[state.anchor] = _result;
+        state.anchorMap[state.anchor] = result;
     }
 
     ch = state.input.charCodeAt(++state.position);
 
+    const tag = state.tag,
+        anchor = state.anchor;
+    let readNext = true;
+    let valueNode,
+        keyNode,
+        keyTag = (keyNode = valueNode = null),
+        isExplicitPair: boolean,
+        isPair = (isExplicitPair = false);
+    let following = 0,
+        line = 0;
+    const overridableKeys: ArrayObject<boolean> = {};
     while (ch !== 0) {
         skipSeparationSpace(state, true, nodeIndent);
 
@@ -670,10 +630,10 @@ function readFlowCollection(state, nodeIndent) {
 
         if (ch === terminator) {
             state.position++;
-            state.tag = _tag;
-            state.anchor = _anchor;
+            state.tag = tag;
+            state.anchor = anchor;
             state.kind = isMapping ? 'mapping' : 'sequence';
-            state.result = _result;
+            state.result = result;
             return true;
         }
         if (!readNext) {
@@ -693,7 +653,7 @@ function readFlowCollection(state, nodeIndent) {
             }
         }
 
-        _line = state.line;
+        line = state.line;
         composeNode(state, nodeIndent, CONTEXT_FLOW_IN, false, true);
         keyTag = state.tag;
         keyNode = state.result;
@@ -701,7 +661,7 @@ function readFlowCollection(state, nodeIndent) {
 
         ch = state.input.charCodeAt(state.position);
 
-        if ((isExplicitPair || state.line === _line) && ch === 0x3a /* : */) {
+        if ((isExplicitPair || state.line === line) && ch === 0x3a /* : */) {
             isPair = true;
             ch = state.input.charCodeAt(++state.position);
             skipSeparationSpace(state, true, nodeIndent);
@@ -710,11 +670,11 @@ function readFlowCollection(state, nodeIndent) {
         }
 
         if (isMapping) {
-            storeMappingPair(state, _result, overridableKeys, keyTag, keyNode, valueNode);
+            storeMappingPair(state, result, overridableKeys, keyTag, keyNode, valueNode);
         } else if (isPair) {
-            _result.push(storeMappingPair(state, null, overridableKeys, keyTag, keyNode, valueNode));
+            (result as Array<{}>).push(storeMappingPair(state, null, overridableKeys, keyTag, keyNode, valueNode));
         } else {
-            _result.push(keyNode);
+            (result as ResultType[]).push(keyNode);
         }
 
         skipSeparationSpace(state, true, nodeIndent);
@@ -733,19 +693,16 @@ function readFlowCollection(state, nodeIndent) {
 }
 
 function readBlockScalar(state, nodeIndent) {
-    let captureStart,
-        folding,
-        chomping = CHOMPING_CLIP,
+    let chomping = CHOMPING_CLIP,
         didReadContent = false,
         detectedIndent = false,
         textIndent = nodeIndent,
         emptyLines = 0,
-        atMoreIndented = false,
-        tmp,
-        ch;
+        atMoreIndented = false;
 
-    ch = state.input.charCodeAt(state.position);
+    let ch = state.input.charCodeAt(state.position);
 
+    let folding = false;
     if (ch === 0x7c /* | */) {
         folding = false;
     } else if (ch === 0x3e /* > */) {
@@ -757,6 +714,7 @@ function readBlockScalar(state, nodeIndent) {
     state.kind = 'scalar';
     state.result = '';
 
+    let tmp = 0;
     while (ch !== 0) {
         ch = state.input.charCodeAt(++state.position);
 
@@ -862,7 +820,7 @@ function readBlockScalar(state, nodeIndent) {
         didReadContent = true;
         detectedIndent = true;
         emptyLines = 0;
-        captureStart = state.position;
+        const captureStart = state.position;
 
         while (!is_EOL(ch) && ch !== 0) {
             ch = state.input.charCodeAt(++state.position);
@@ -875,16 +833,16 @@ function readBlockScalar(state, nodeIndent) {
 }
 
 function readBlockSequence(state, nodeIndent) {
-    let _line,
-        _tag = state.tag,
-        _anchor = state.anchor,
-        _result = [],
-        following,
+    let line: number,
+        following: number,
         detected = false,
-        ch;
+        ch: number;
+    const tag = state.tag,
+        anchor = state.anchor,
+        result = [];
 
     if (state.anchor !== null) {
-        state.anchorMap[state.anchor] = _result;
+        state.anchorMap[state.anchor] = result;
     }
 
     ch = state.input.charCodeAt(state.position);
@@ -905,20 +863,20 @@ function readBlockSequence(state, nodeIndent) {
 
         if (skipSeparationSpace(state, true, -1)) {
             if (state.lineIndent <= nodeIndent) {
-                _result.push(null);
+                result.push(null);
                 ch = state.input.charCodeAt(state.position);
                 continue;
             }
         }
 
-        _line = state.line;
+        line = state.line;
         composeNode(state, nodeIndent, CONTEXT_BLOCK_IN, false, true);
-        _result.push(state.result);
+        result.push(state.result);
         skipSeparationSpace(state, true, -1);
 
         ch = state.input.charCodeAt(state.position);
 
-        if ((state.line === _line || state.lineIndent > nodeIndent) && ch !== 0) {
+        if ((state.line === line || state.lineIndent > nodeIndent) && ch !== 0) {
             throwError(state, 'bad indentation of a sequence entry');
         } else if (state.lineIndent < nodeIndent) {
             break;
@@ -926,41 +884,41 @@ function readBlockSequence(state, nodeIndent) {
     }
 
     if (detected) {
-        state.tag = _tag;
-        state.anchor = _anchor;
+        state.tag = tag;
+        state.anchor = anchor;
         state.kind = 'sequence';
-        state.result = _result;
+        state.result = result;
         return true;
     }
     return false;
 }
 
 function readBlockMapping(state, nodeIndent, flowIndent) {
-    let following,
-        allowCompact,
-        _line,
-        _pos,
-        _tag = state.tag,
-        _anchor = state.anchor,
-        _result = {},
-        overridableKeys = {},
+    const tag = state.tag,
+        anchor = state.anchor,
+        result = {},
+        overridableKeys = {};
+    let following: number,
+        allowCompact: boolean,
+        line: number,
+        pos: number,
         keyTag = null,
         keyNode = null,
         valueNode = null,
         atExplicitKey = false,
         detected = false,
-        ch;
+        ch: number;
 
     if (state.anchor !== null) {
-        state.anchorMap[state.anchor] = _result;
+        state.anchorMap[state.anchor] = result;
     }
 
     ch = state.input.charCodeAt(state.position);
 
     while (ch !== 0) {
         following = state.input.charCodeAt(state.position + 1);
-        _line = state.line; // Save the current line.
-        _pos = state.position;
+        line = state.line; // Save the current line.
+        pos = state.position;
 
         //
         // Explicit notation case. There are two separate blocks:
@@ -969,7 +927,7 @@ function readBlockMapping(state, nodeIndent, flowIndent) {
         if ((ch === 0x3f /* ? */ || ch === 0x3a) /* : */ && is_WS_OR_EOL(following)) {
             if (ch === 0x3f /* ? */) {
                 if (atExplicitKey) {
-                    storeMappingPair(state, _result, overridableKeys, keyTag, keyNode, null);
+                    storeMappingPair(state, result, overridableKeys, keyTag, keyNode, null);
                     keyTag = keyNode = valueNode = null;
                 }
 
@@ -994,7 +952,7 @@ function readBlockMapping(state, nodeIndent, flowIndent) {
             // Implicit notation case. Flow-style node as the key first, then ":", and the value.
             //
         } else if (composeNode(state, flowIndent, CONTEXT_FLOW_OUT, false, true)) {
-            if (state.line === _line) {
+            if (state.line === line) {
                 ch = state.input.charCodeAt(state.position);
 
                 while (is_WHITE_SPACE(ch)) {
@@ -1012,7 +970,7 @@ function readBlockMapping(state, nodeIndent, flowIndent) {
                     }
 
                     if (atExplicitKey) {
-                        storeMappingPair(state, _result, overridableKeys, keyTag, keyNode, null);
+                        storeMappingPair(state, result, overridableKeys, keyTag, keyNode, null);
                         keyTag = keyNode = valueNode = null;
                     }
 
@@ -1024,15 +982,15 @@ function readBlockMapping(state, nodeIndent, flowIndent) {
                 } else if (detected) {
                     throwError(state, 'can not read an implicit mapping pair; a colon is missed');
                 } else {
-                    state.tag = _tag;
-                    state.anchor = _anchor;
+                    state.tag = tag;
+                    state.anchor = anchor;
                     return true; // Keep the result of `composeNode`.
                 }
             } else if (detected) {
                 throwError(state, 'can not read a block mapping entry; a multiline key may not be an implicit key');
             } else {
-                state.tag = _tag;
-                state.anchor = _anchor;
+                state.tag = tag;
+                state.anchor = anchor;
                 return true; // Keep the result of `composeNode`.
             }
         } else {
@@ -1042,7 +1000,7 @@ function readBlockMapping(state, nodeIndent, flowIndent) {
         //
         // Common reading code for both explicit and implicit notations.
         //
-        if (state.line === _line || state.lineIndent > nodeIndent) {
+        if (state.line === line || state.lineIndent > nodeIndent) {
             if (composeNode(state, nodeIndent, CONTEXT_BLOCK_OUT, true, allowCompact)) {
                 if (atExplicitKey) {
                     keyNode = state.result;
@@ -1052,7 +1010,7 @@ function readBlockMapping(state, nodeIndent, flowIndent) {
             }
 
             if (!atExplicitKey) {
-                storeMappingPair(state, _result, overridableKeys, keyTag, keyNode, valueNode, _line, _pos);
+                storeMappingPair(state, result, overridableKeys, keyTag, keyNode, valueNode, line, pos);
                 keyTag = keyNode = valueNode = null;
             }
 
@@ -1073,27 +1031,27 @@ function readBlockMapping(state, nodeIndent, flowIndent) {
 
     // Special case: last mapping's node contains only the key in explicit notation.
     if (atExplicitKey) {
-        storeMappingPair(state, _result, overridableKeys, keyTag, keyNode, null);
+        storeMappingPair(state, result, overridableKeys, keyTag, keyNode, null);
     }
 
     // Expose the resulting mapping.
     if (detected) {
-        state.tag = _tag;
-        state.anchor = _anchor;
+        state.tag = tag;
+        state.anchor = anchor;
         state.kind = 'mapping';
-        state.result = _result;
+        state.result = result;
     }
 
     return detected;
 }
 
-function readTagProperty(state) {
-    let _position,
+function readTagProperty(state: LoaderState) {
+    let position: number,
         isVerbatim = false,
         isNamed = false,
-        tagHandle,
-        tagName,
-        ch;
+        tagHandle: string,
+        tagName: string,
+        ch: number;
 
     ch = state.input.charCodeAt(state.position);
 
@@ -1116,7 +1074,7 @@ function readTagProperty(state) {
         tagHandle = '!';
     }
 
-    _position = state.position;
+    position = state.position;
 
     if (isVerbatim) {
         do {
@@ -1124,7 +1082,7 @@ function readTagProperty(state) {
         } while (ch !== 0 && ch !== 0x3e /* > */);
 
         if (state.position < state.length) {
-            tagName = state.input.slice(_position, state.position);
+            tagName = state.input.slice(position, state.position);
             ch = state.input.charCodeAt(++state.position);
         } else {
             throwError(state, 'unexpected end of the stream within a verbatim tag');
@@ -1133,14 +1091,14 @@ function readTagProperty(state) {
         while (ch !== 0 && !is_WS_OR_EOL(ch)) {
             if (ch === 0x21 /* ! */) {
                 if (!isNamed) {
-                    tagHandle = state.input.slice(_position - 1, state.position + 1);
+                    tagHandle = state.input.slice(position - 1, state.position + 1);
 
                     if (!PATTERN_TAG_HANDLE.test(tagHandle)) {
                         throwError(state, 'named tag handle cannot contain such characters');
                     }
 
                     isNamed = true;
-                    _position = state.position + 1;
+                    position = state.position + 1;
                 } else {
                     throwError(state, 'tag suffix cannot contain exclamation marks');
                 }
@@ -1149,7 +1107,7 @@ function readTagProperty(state) {
             ch = state.input.charCodeAt(++state.position);
         }
 
-        tagName = state.input.slice(_position, state.position);
+        tagName = state.input.slice(position, state.position);
 
         if (PATTERN_FLOW_INDICATORS.test(tagName)) {
             throwError(state, 'tag suffix cannot contain flow indicator characters');
@@ -1157,7 +1115,7 @@ function readTagProperty(state) {
     }
 
     if (tagName && !PATTERN_TAG_URI.test(tagName)) {
-        throwError(state, 'tag name cannot contain such characters: ' + tagName);
+        throwError(state, `tag name cannot contain such characters: ${tagName}`);
     }
 
     if (isVerbatim) {
@@ -1165,18 +1123,18 @@ function readTagProperty(state) {
     } else if (_hasOwnProperty.call(state.tagMap, tagHandle)) {
         state.tag = state.tagMap[tagHandle] + tagName;
     } else if (tagHandle === '!') {
-        state.tag = '!' + tagName;
+        state.tag = `!${tagName}`;
     } else if (tagHandle === '!!') {
-        state.tag = 'tag:yaml.org,2002:' + tagName;
+        state.tag = `tag:yaml.org,2002:${tagName}`;
     } else {
-        throwError(state, 'undeclared tag handle "' + tagHandle + '"');
+        throwError(state, `undeclared tag handle "${tagHandle}"`);
     }
 
     return true;
 }
 
-function readAnchorProperty(state) {
-    let _position, ch;
+function readAnchorProperty(state: LoaderState) {
+    let position: number, ch: number;
 
     ch = state.input.charCodeAt(state.position);
 
@@ -1187,17 +1145,17 @@ function readAnchorProperty(state) {
     }
 
     ch = state.input.charCodeAt(++state.position);
-    _position = state.position;
+    position = state.position;
 
     while (ch !== 0 && !is_WS_OR_EOL(ch) && !is_FLOW_INDICATOR(ch)) {
         ch = state.input.charCodeAt(++state.position);
     }
 
-    if (state.position === _position) {
+    if (state.position === position) {
         throwError(state, 'name of an anchor node must contain at least one character');
     }
 
-    state.anchor = state.input.slice(_position, state.position);
+    state.anchor = state.input.slice(position, state.position);
     return true;
 }
 
@@ -1222,7 +1180,7 @@ function readAlias(state) {
     alias = state.input.slice(_position, state.position);
 
     if (!state.anchorMap.hasOwnProperty(alias)) {
-        throwError(state, 'unidentified alias "' + alias + '"');
+        throwError(state, `unidentified alias "${alias}"`);
     }
 
     state.result = state.anchorMap[alias];
@@ -1231,17 +1189,15 @@ function readAlias(state) {
 }
 
 function composeNode(state, parentIndent, nodeContext, allowToSeek, allowCompact) {
-    let allowBlockStyles,
-        allowBlockScalars,
-        allowBlockCollections,
+    let allowBlockStyles: boolean,
+        allowBlockScalars: boolean,
+        allowBlockCollections: boolean,
         indentStatus = 1, // 1: this>parent, 0: this=parent, -1: this<parent
         atNewLine = false,
         hasContent = false,
-        typeIndex,
-        typeQuantity,
-        type,
-        flowIndent,
-        blockIndent;
+        type: Type,
+        flowIndent: number,
+        blockIndent: number;
 
     if (state.listener !== null) {
         state.listener('open', state);
@@ -1293,11 +1249,8 @@ function composeNode(state, parentIndent, nodeContext, allowToSeek, allowCompact
     }
 
     if (indentStatus === 1 || CONTEXT_BLOCK_OUT === nodeContext) {
-        if (CONTEXT_FLOW_IN === nodeContext || CONTEXT_FLOW_OUT === nodeContext) {
-            flowIndent = parentIndent;
-        } else {
-            flowIndent = parentIndent + 1;
-        }
+        const cond = CONTEXT_FLOW_IN === nodeContext || CONTEXT_FLOW_OUT === nodeContext;
+        flowIndent = cond ? parentIndent : parentIndent + 1;
 
         blockIndent = state.position - state.lineStart;
 
@@ -1342,7 +1295,7 @@ function composeNode(state, parentIndent, nodeContext, allowToSeek, allowCompact
 
     if (state.tag !== null && state.tag !== '!') {
         if (state.tag === '?') {
-            for (typeIndex = 0, typeQuantity = state.implicitTypes.length; typeIndex < typeQuantity; typeIndex += 1) {
+            for (let typeIndex = 0, typeQuantity = state.implicitTypes.length; typeIndex < typeQuantity; typeIndex++) {
                 type = state.implicitTypes[typeIndex];
 
                 // Implicit resolving is not allowed for non-scalar types, and '?'
@@ -1365,19 +1318,13 @@ function composeNode(state, parentIndent, nodeContext, allowToSeek, allowCompact
             if (state.result !== null && type.kind !== state.kind) {
                 throwError(
                     state,
-                    'unacceptable node kind for !<' +
-                        state.tag +
-                        '> tag; it should be "' +
-                        type.kind +
-                        '", not "' +
-                        state.kind +
-                        '"',
+                    `unacceptable node kind for !<${state.tag}> tag; it should be "${type.kind}", not "${state.kind}"`,
                 );
             }
 
             if (!type.resolve(state.result)) {
                 // `state.result` updated in resolver if matched
-                throwError(state, 'cannot resolve a node with !<' + state.tag + '> explicit tag');
+                throwError(state, `cannot resolve a node with !<${state.tag}> explicit tag`);
             } else {
                 state.result = type.construct(state.result);
                 if (state.anchor !== null) {
@@ -1385,7 +1332,7 @@ function composeNode(state, parentIndent, nodeContext, allowToSeek, allowCompact
                 }
             }
         } else {
-            throwError(state, 'unknown tag !<' + state.tag + '>');
+            throwError(state, `unknown tag !<${state.tag}>`);
         }
     }
 
@@ -1396,12 +1343,12 @@ function composeNode(state, parentIndent, nodeContext, allowToSeek, allowCompact
 }
 
 function readDocument(state) {
-    let documentStart = state.position,
-        _position,
-        directiveName,
-        directiveArgs,
+    const documentStart = state.position;
+    let position: number,
+        directiveName: string,
+        directiveArgs: any[],
         hasDirectives = false,
-        ch;
+        ch: number;
 
     state.version = null;
     state.checkLineBreaks = state.legacy;
@@ -1419,13 +1366,13 @@ function readDocument(state) {
 
         hasDirectives = true;
         ch = state.input.charCodeAt(++state.position);
-        _position = state.position;
+        position = state.position;
 
         while (ch !== 0 && !is_WS_OR_EOL(ch)) {
             ch = state.input.charCodeAt(++state.position);
         }
 
-        directiveName = state.input.slice(_position, state.position);
+        directiveName = state.input.slice(position, state.position);
         directiveArgs = [];
 
         if (directiveName.length < 1) {
@@ -1446,13 +1393,13 @@ function readDocument(state) {
 
             if (is_EOL(ch)) break;
 
-            _position = state.position;
+            position = state.position;
 
             while (ch !== 0 && !is_WS_OR_EOL(ch)) {
                 ch = state.input.charCodeAt(++state.position);
             }
 
-            directiveArgs.push(state.input.slice(_position, state.position));
+            directiveArgs.push(state.input.slice(position, state.position));
         }
 
         if (ch !== 0) readLineBreak(state);
@@ -1460,7 +1407,7 @@ function readDocument(state) {
         if (_hasOwnProperty.call(directiveHandlers, directiveName)) {
             directiveHandlers[directiveName](state, directiveName, directiveArgs);
         } else {
-            throwWarning(state, 'unknown document directive "' + directiveName + '"');
+            throwWarning(state, `unknown document directive "${directiveName}"`);
         }
     }
 
@@ -1502,7 +1449,7 @@ function readDocument(state) {
     }
 }
 
-function loadDocuments(input, options) {
+function loadDocuments(input: string, options?: LoaderStateOptions) {
     input = String(input);
     options = options || {};
 
@@ -1521,7 +1468,7 @@ function loadDocuments(input, options) {
         }
     }
 
-    const state = new State(input, options);
+    const state = new LoaderState(input, options);
 
     // Use 0 as string terminator. That significantly simplifies bounds check.
     state.input += '\0';
@@ -1538,26 +1485,33 @@ function loadDocuments(input, options) {
     return state.documents;
 }
 
-function loadAll(input, iterator, options) {
-    let documents = loadDocuments(input, options),
-        index,
-        length;
+type CbFunction = (doc: any) => void;
+function isCbFunction(fn: any): fn is CbFunction {
+    return typeof fn === 'function';
+}
 
-    if (typeof iterator !== 'function') {
-        return documents;
+export function loadAll<T extends CbFunction | LoaderStateOptions>(
+    input: string,
+    iteratorOrOption?: T,
+    options?: LoaderStateOptions,
+): T extends CbFunction ? void : any[] {
+    const documents = loadDocuments(input, options);
+
+    if (!isCbFunction(iteratorOrOption)) {
+        return documents as any;
     }
 
-    for (index = 0, length = documents.length; index < length; index += 1) {
+    const iterator = iteratorOrOption;
+    for (let index = 0, length = documents.length; index < length; index++) {
         iterator(documents[index]);
     }
 }
 
-function load(input, options) {
+export function load(input: string, options?: LoaderStateOptions): any {
     const documents = loadDocuments(input, options);
 
     if (documents.length === 0) {
-        /*eslint-disable no-undefined*/
-        return undefined;
+        return;
     }
     if (documents.length === 1) {
         return documents[0];
@@ -1565,19 +1519,19 @@ function load(input, options) {
     throw new YAMLError('expected a single document in the stream, but found more');
 }
 
-function safeLoadAll(input, output, options) {
-    if (typeof output === 'function') {
-        loadAll(input, output, common.extend({ schema: DEFAULT_SAFE_SCHEMA }, options));
+export function safeLoadAll<T extends CbFunction | LoaderStateOptions>(
+    input: string,
+    outputOrOptions: T,
+    options: LoaderStateOptions = {},
+): T extends CbFunction ? void : any[] {
+    if (isCbFunction(outputOrOptions)) {
+        loadAll<T>(input, outputOrOptions, { schema: DEFAULT_SAFE_SCHEMA, ...options });
     } else {
-        return loadAll(input, common.extend({ schema: DEFAULT_SAFE_SCHEMA }, options));
+        options = (outputOrOptions as LoaderStateOptions) || {};
+        return loadAll<T>(input, { schema: DEFAULT_SAFE_SCHEMA, ...options } as any);
     }
 }
 
-function safeLoad(input, options) {
-    return load(input, common.extend({ schema: DEFAULT_SAFE_SCHEMA }, options));
+export function safeLoad(input: string, options?: LoaderStateOptions): any {
+    return load(input, { schema: DEFAULT_SAFE_SCHEMA, ...options });
 }
-
-module.exports.loadAll = loadAll;
-module.exports.load = load;
-module.exports.safeLoadAll = safeLoadAll;
-module.exports.safeLoad = safeLoad;

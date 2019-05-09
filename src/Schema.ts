@@ -21,7 +21,7 @@ function compileList(schema: Schema, name: 'implicit' | 'explicit', result: Type
     return result.filter((type, index) => exclude.includes(index));
 }
 
-type TypeMap = { [k in KindType | 'fallback']: ObjBoxed<Type> };
+export type TypeMap = { [k in KindType | 'fallback']: ObjBoxed<Type> };
 function compileMap(...typesList: Type[][]) {
     const result: TypeMap = {
         fallback: {},
