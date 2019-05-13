@@ -1,27 +1,29 @@
-import { YAMLError } from './error/YAMLError';
-import { KindType, Type } from './Type';
+import { YAMLError } from './error/YAMLError.ts';
+import { KindType, Type } from './Type.ts';
+import { ArrayObject } from './utils.ts';
 
 function compileList(schema: Schema, name: 'implicit' | 'explicit', result: Type[]): Type[] {
     const exclude: number[] = [];
 
-    schema.include.forEach(includedSchema => {
+    for (const includedSchema of schema.include) {
         result = compileList(includedSchema, name, result);
-    });
+    }
 
-    schema[name].forEach(currentType => {
-        result.forEach((previousType, previousIndex) => {
+    for (const currentType of schema[name]) {
+        for (let previousIndex = 0; previousIndex < result.length; previousIndex++) {
+            const previousType = result[previousIndex];
             if (previousType.tag === currentType.tag && previousType.kind === currentType.kind) {
                 exclude.push(previousIndex);
             }
-        });
+        }
 
         result.push(currentType);
-    });
+    }
 
-    return result.filter((type, index) => exclude.includes(index));
+    return result.filter((type, index) => !exclude.includes(index));
 }
 
-export type TypeMap = { [k in KindType | 'fallback']: ObjBoxed<Type> };
+export type TypeMap = { [k in KindType | 'fallback']: ArrayObject<Type> };
 function compileMap(...typesList: Type[][]) {
     const result: TypeMap = {
         fallback: {},
@@ -30,13 +32,13 @@ function compileMap(...typesList: Type[][]) {
         sequence: {},
     };
 
-    typesList.forEach(types => {
-        types.forEach(type => {
+    for (const types of typesList) {
+        for (const type of types) {
             if (type.kind !== null) {
                 result[type.kind][type.tag] = result['fallback'][type.tag] = type;
             }
-        });
-    });
+        }
+    }
     return result;
 }
 
@@ -56,13 +58,13 @@ export class Schema implements SchemaDefinition {
         this.implicit = definition.implicit || [];
         this.include = definition.include || [];
 
-        this.implicit.forEach(type => {
+        for (const type of this.implicit) {
             if (type.loadKind && type.loadKind !== 'scalar') {
                 throw new YAMLError(
                     'There is a non-scalar type in the implicit list of a schema. Implicit resolving of such types is not supported.',
                 );
             }
-        });
+        }
 
         this.compiledImplicit = compileList(this, 'implicit', []);
         this.compiledExplicit = compileList(this, 'explicit', []);

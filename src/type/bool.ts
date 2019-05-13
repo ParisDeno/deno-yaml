@@ -1,4 +1,5 @@
 import { Type } from '../Type.ts';
+import { isBoolean } from '../utils.ts';
 
 function resolveYamlBoolean(data: string) {
     const max = data.length;
@@ -11,10 +12,6 @@ function resolveYamlBoolean(data: string) {
 
 function constructYamlBoolean(data: string) {
     return data === 'true' || data === 'True' || data === 'TRUE';
-}
-
-function isBoolean(obj: any): obj is boolean {
-    return Object.prototype.toString.call(obj) === '[object Boolean]';
 }
 
 export const bool = new Type('tag:yaml.org,2002:bool', {

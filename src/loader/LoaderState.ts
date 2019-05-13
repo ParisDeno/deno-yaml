@@ -29,7 +29,7 @@ export class LoaderState extends State {
     public onWarning?: () => any;
     public legacy: boolean;
     public json: boolean;
-    public listener?: () => any;
+    public listener?: (...args: any[]) => any;
     public implicitTypes: Type[];
     public typeMap: TypeMap;
 
@@ -44,7 +44,7 @@ export class LoaderState extends State {
 
     constructor(
         public input: string,
-        { filename, schema, onWarning, legacy = false, json = false, listener }: LoaderStateOptions,
+        { filename, schema, onWarning, legacy = false, json = false, listener = null }: LoaderStateOptions,
     ) {
         super(schema);
         this.filename = filename;

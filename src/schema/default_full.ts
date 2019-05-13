@@ -1,5 +1,5 @@
 import { Schema } from '../Schema.ts';
-import { default_safe } from './default_safe';
+import { default_safe } from './default_safe.ts';
 
 // JS-YAML's default schema for `load` function.
 // It is not described in the YAML specification.

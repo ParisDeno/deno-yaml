@@ -1,5 +1,5 @@
 import { Type } from '../Type.ts';
-import { isNegativeZero } from '../utils';
+import { isNegativeZero } from '../utils.ts';
 
 function isHexCode(c: number) {
     return (

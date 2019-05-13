@@ -1,4 +1,4 @@
-import { repeat } from './utils';
+import { repeat } from './utils.ts';
 
 export class Mark {
     constructor(

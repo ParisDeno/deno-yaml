@@ -1,8 +1,7 @@
 // tslint:disable:no-conditional-assignment
-import { YAMLError } from '../error/YAMLError';
-import { Mark } from '../Mark';
-import { SchemaDefinition } from '../Schema.ts';
-import { DEFAULT_FULL_SCHEMA, DEFAULT_SAFE_SCHEMA } from '../schema/mod.ts';
+import { YAMLError } from '../error/YAMLError.ts';
+import { Mark } from '../Mark.ts';
+import { DEFAULT_SAFE_SCHEMA } from '../schema/mod.ts';
 import { Type } from '../Type.ts';
 import * as common from '../utils.ts';
 import { LoaderState, LoaderStateOptions, ResultType } from './LoaderState.ts';
@@ -474,7 +473,7 @@ function readPlainScalar(state: LoaderState, nodeIndent: number, withinFlowColle
 
     captureSegment(state, captureStart, captureEnd, false);
 
-    if (state.result) {
+    if (!common.isNullOrUndefined(state.result)) {
         return true;
     }
 
@@ -1188,7 +1187,13 @@ function readAlias(state) {
     return true;
 }
 
-function composeNode(state, parentIndent, nodeContext, allowToSeek, allowCompact) {
+function composeNode(
+    state: LoaderState,
+    parentIndent: number,
+    nodeContext: number,
+    allowToSeek: boolean,
+    allowCompact: boolean,
+) {
     let allowBlockStyles: boolean,
         allowBlockScalars: boolean,
         allowBlockCollections: boolean,
@@ -1199,7 +1204,7 @@ function composeNode(state, parentIndent, nodeContext, allowToSeek, allowCompact
         flowIndent: number,
         blockIndent: number;
 
-    if (state.listener !== null) {
+    if (state.listener && state.listener !== null) {
         state.listener('open', state);
     }
 
@@ -1336,13 +1341,13 @@ function composeNode(state, parentIndent, nodeContext, allowToSeek, allowCompact
         }
     }
 
-    if (state.listener !== null) {
+    if (state.listener && state.listener !== null) {
         state.listener('close', state);
     }
     return state.tag !== null || state.anchor !== null || hasContent;
 }
 
-function readDocument(state) {
+function readDocument(state: LoaderState) {
     const documentStart = state.position;
     let position: number,
         directiveName: string,
@@ -1495,12 +1500,11 @@ export function loadAll<T extends CbFunction | LoaderStateOptions>(
     iteratorOrOption?: T,
     options?: LoaderStateOptions,
 ): T extends CbFunction ? void : any[] {
-    const documents = loadDocuments(input, options);
-
     if (!isCbFunction(iteratorOrOption)) {
-        return documents as any;
+        return loadDocuments(input, iteratorOrOption as LoaderStateOptions) as any;
     }
 
+    const documents = loadDocuments(input, options);
     const iterator = iteratorOrOption;
     for (let index = 0, length = documents.length; index < length; index++) {
         iterator(documents[index]);
@@ -1521,7 +1525,7 @@ export function load(input: string, options?: LoaderStateOptions): any {
 
 export function safeLoadAll<T extends CbFunction | LoaderStateOptions>(
     input: string,
-    outputOrOptions: T,
+    outputOrOptions?: T,
     options: LoaderStateOptions = {},
 ): T extends CbFunction ? void : any[] {
     if (isCbFunction(outputOrOptions)) {

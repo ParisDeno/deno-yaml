@@ -1,7 +1,5 @@
-'use strict';
-
 import { StyleVariant, Type } from '../Type.ts';
-import { isNegativeZero } from '../utils';
+import { isNegativeZero } from '../utils.ts';
 
 const YAML_FLOAT_PATTERN = new RegExp(
     // 2.5e4, 2.5 and integers

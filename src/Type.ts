@@ -1,3 +1,5 @@
+import { ArrayObject } from './utils.ts';
+
 export type KindType = 'sequence' | 'scalar' | 'mapping';
 export type StyleVariant = 'lowercase' | 'uppercase' | 'camelcase' | 'decimal';
 type RepresentFn = (data: any, style?: StyleVariant) => any;
@@ -11,7 +13,7 @@ interface TypeOptions {
     construct?: (data: string) => any;
     instanceOf?: object;
     predicate?: (data: object) => boolean;
-    represent?: RepresentFn | ObjBoxed<RepresentFn>;
+    represent?: RepresentFn | ArrayObject<RepresentFn>;
     defaultStyle?: StyleVariant;
     styleAliases?: { [x: string]: any };
 }
@@ -25,7 +27,7 @@ export class Type {
     public kind: KindType | null = null;
     public instanceOf?: object;
     public predicate?: (data: object) => boolean;
-    public represent?: RepresentFn | ObjBoxed<RepresentFn>;
+    public represent?: RepresentFn | ArrayObject<RepresentFn>;
     public defaultStyle?: string;
     public styleAliases?: { [x: string]: any };
     public loadKind?: KindType;
