@@ -1,3 +1,5 @@
+import { safeLoad, safeLoadAll } from './src/loader/loader.ts';
+
 const { DenoError, ErrorKind } = Deno;
 
 export async function parse(content: string): Promise<any> {
@@ -5,5 +7,5 @@ export async function parse(content: string): Promise<any> {
 }
 
 export function parseSync(content: string): any {
-    throw new DenoError(ErrorKind.Other, 'Not yet implemented.');
+    return safeLoad(content);
 }

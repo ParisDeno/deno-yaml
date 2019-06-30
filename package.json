@@ -2,13 +2,12 @@
   "name": "deno-yaml",
   "description": "YAML parser / dumper for Deno",
   "version": "1.0.0",
-  "main": "null",
   "repository": "git@github.com:bios21/deno-yaml.git",
   "author": "Lilian Saget-Lethias <lilian.sagetlethias@gmail.com>",
   "license": "MIT",
   "private": true,
   "scripts": {
-    "postinstall": "yes | cp -fi deno.d.ts.dist deno.d.ts && deno --types | sed -f deno.d.ts.sed >> deno.d.ts"
+    "postinstall": "yes | cp -fi deno.d.ts.dist deno.d.ts && deno types | sed -f deno.d.ts.sed >> deno.d.ts"
   },
   "devDependencies": {
     "prettier": "^1.17.0",
