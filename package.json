@@ -2,7 +2,6 @@
   "name": "deno-yaml",
   "description": "YAML parser / dumper for Deno",
   "version": "1.0.0",
-  "main": "null",
   "repository": "git@github.com:bios21/deno-yaml.git",
   "author": "Lilian Saget-Lethias <lilian.sagetlethias@gmail.com>",
   "license": "MIT",
