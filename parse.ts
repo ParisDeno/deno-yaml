@@ -1,3 +1,5 @@
+// Copyright 2018-2019 the Deno authors. All rights reserved. MIT license.
+
 import { CbFunction, safeLoad, safeLoadAll } from './src/loader/loader.ts';
 import { LoaderStateOptions } from './src/loader/LoaderState.ts';
 
