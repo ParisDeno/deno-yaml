@@ -1,6 +1,6 @@
-import { parseSync } from '../mod.ts';
+import { parse } from '../mod.ts';
 
-const result = parseSync(`
+const result = parse(`
 test: toto
 foo:
   bar: True

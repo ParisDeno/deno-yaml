@@ -114,8 +114,8 @@ function representYamlBinary(object: Uint8Array) {
 function isBinary(obj: any): obj is Deno.Buffer {
     const buf = new Buffer();
     try {
-        buf.readFromSync(obj as Deno.Buffer);
-        return true;
+        if (0 > buf.readFromSync(obj as Deno.Buffer)) return true;
+        return false;
     } catch {
         return false;
     } finally {

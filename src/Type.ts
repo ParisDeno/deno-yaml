@@ -2,7 +2,7 @@ import { ArrayObject } from './utils.ts';
 
 export type KindType = 'sequence' | 'scalar' | 'mapping';
 export type StyleVariant = 'lowercase' | 'uppercase' | 'camelcase' | 'decimal';
-type RepresentFn = (data: any, style?: StyleVariant) => any;
+export type RepresentFn = (data: any, style?: StyleVariant) => any;
 
 const DEFAULT_RESOLVE = () => true;
 const DEFAULT_CONSTRUCT = (data: any) => data;
@@ -11,7 +11,7 @@ interface TypeOptions {
     kind: KindType;
     resolve?: (data: any) => boolean;
     construct?: (data: string) => any;
-    instanceOf?: object;
+    instanceOf?: any;
     predicate?: (data: object) => boolean;
     represent?: RepresentFn | ArrayObject<RepresentFn>;
     defaultStyle?: StyleVariant;
@@ -25,12 +25,12 @@ function checkTagFormat(tag: string): string {
 export class Type {
     public tag: string;
     public kind: KindType | null = null;
-    public instanceOf?: object;
-    public predicate?: (data: object) => boolean;
-    public represent?: RepresentFn | ArrayObject<RepresentFn>;
-    public defaultStyle?: string;
-    public styleAliases?: { [x: string]: any };
-    public loadKind?: KindType;
+    public instanceOf: any;
+    public predicate: (data: object) => boolean;
+    public represent: RepresentFn | ArrayObject<RepresentFn>;
+    public defaultStyle: StyleVariant;
+    public styleAliases: { [x: string]: any };
+    public loadKind: KindType;
 
     constructor(tag: string, options?: TypeOptions) {
         this.tag = checkTagFormat(tag);
