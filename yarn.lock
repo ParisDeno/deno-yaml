@@ -37,6 +37,17 @@
     reflect-metadata "^0.1.12"
     tslib "^1.8.1"
 
+"@wynd/tslint-config-wynd@^1.5.0":
+  version "1.5.0"
+  resolved "https://registry.yarnpkg.com/@wynd/tslint-config-wynd/-/tslint-config-wynd-1.5.0.tgz#7dd32a3f3b42521200fcf666577f86a54bc10a2a"
+  integrity sha512-6y7ZRwqJu3XEjIu4Kmqui5RJitTonuDaHRc1HqOrQEaxjkj0Px8EHDW+YMxcCi7xP2+DLPsfMfO+eLMfMhK/4A==
+  dependencies:
+    prettier "~1.16.4"
+    tslint-config-airbnb "^5.11.0"
+    tslint-config-prettier "^1.18.0"
+    tslint-plugin-prettier "^2.0.0"
+    tslint-react "^4.0.0"
+
 ansi-styles@^3.2.1:
   version "3.2.1"
   resolved "https://registry.yarnpkg.com/ansi-styles/-/ansi-styles-3.2.1.tgz#41fbb20243e50b12be0f04b8dedbf07520ce841d"
@@ -376,6 +387,11 @@ prettier@^1.17.0:
   resolved "https://registry.yarnpkg.com/prettier/-/prettier-1.18.2.tgz#6823e7c5900017b4bd3acf46fe9ac4b4d7bda9ea"
   integrity sha512-OeHeMc0JhFE9idD4ZdtNibzY0+TPHSpSSb9h8FqtP+YnoZZ1sl8Vc9b1sasjfymH3SonAF4QcA2+mzHPhMvIiw==
 
+prettier@~1.16.4:
+  version "1.16.4"
+  resolved "https://registry.yarnpkg.com/prettier/-/prettier-1.16.4.tgz#73e37e73e018ad2db9c76742e2647e21790c9717"
+  integrity sha512-ZzWuos7TI5CKUeQAtFd6Zhm2s6EpAD/ZLApIhsF9pRvRtM1RFo61dM/4MSRUA0SuLugA/zgrZD8m0BaY46Og7g==
+
 reflect-metadata@^0.1.12:
   version "0.1.13"
   resolved "https://registry.yarnpkg.com/reflect-metadata/-/reflect-metadata-0.1.13.tgz#67ae3ca57c972a2aa1642b10fe363fe32d49dc08"
@@ -430,7 +446,7 @@ tslib@^1.7.1, tslib@^1.8.0, tslib@^1.8.1:
   resolved "https://registry.yarnpkg.com/tslib/-/tslib-1.10.0.tgz#c3c19f95973fb0a62973fb09d90d961ee43e5c8a"
   integrity sha512-qOebF53frne81cf0S9B41ByenJ3/IuH8yJKngAX35CmiZySA0khhkovshKK+jGCaMnVomla7gVlIcc3EvKPbTQ==
 
-tslint-config-airbnb@^5.11.1:
+tslint-config-airbnb@^5.11.0, tslint-config-airbnb@^5.11.1:
   version "5.11.1"
   resolved "https://registry.yarnpkg.com/tslint-config-airbnb/-/tslint-config-airbnb-5.11.1.tgz#51a27fbb8bf24c144d064a274a71da47e7ece617"
   integrity sha512-hkaittm2607vVMe8eotANGN1CimD5tor7uoY3ypg2VTtEcDB/KGWYbJOz58t8LI4cWSyWtgqYQ5F0HwKxxhlkQ==
@@ -469,7 +485,7 @@ tslint-microsoft-contrib@~5.2.1:
   dependencies:
     tsutils "^2.27.2 <2.29.0"
 
-tslint-plugin-prettier@^2.0.1:
+tslint-plugin-prettier@^2.0.0, tslint-plugin-prettier@^2.0.1:
   version "2.0.1"
   resolved "https://registry.yarnpkg.com/tslint-plugin-prettier/-/tslint-plugin-prettier-2.0.1.tgz#95b6a3b766622ffc44375825d7760225c50c3680"
   integrity sha512-4FX9JIx/1rKHIPJNfMb+ooX1gPk5Vg3vNi7+dyFYpLO+O57F4g+b/fo1+W/G0SUOkBLHB/YKScxjX/P+7ZT/Tw==
@@ -477,6 +493,13 @@ tslint-plugin-prettier@^2.0.1:
     eslint-plugin-prettier "^2.2.0"
     lines-and-columns "^1.1.6"
     tslib "^1.7.1"
+
+tslint-react@^4.0.0:
+  version "4.0.0"
+  resolved "https://registry.yarnpkg.com/tslint-react/-/tslint-react-4.0.0.tgz#b4bb4c01c32448cb14d23f143a2f5e4989bb961e"
+  integrity sha512-9fNE0fm9zNDx1+b6hgy8rgDN2WsQLRiIrn3+fbqm0tazBVF6jiaCFAITxmU+WSFWYE03Xhp1joCircXOe1WVAQ==
+  dependencies:
+    tsutils "^3.9.1"
 
 tslint@^5.15.0:
   version "5.18.0"
@@ -511,7 +534,7 @@ tsutils@^2.29.0:
   dependencies:
     tslib "^1.8.1"
 
-tsutils@^3.0.0, tsutils@^3.5.0:
+tsutils@^3.0.0, tsutils@^3.5.0, tsutils@^3.9.1:
   version "3.14.0"
   resolved "https://registry.yarnpkg.com/tsutils/-/tsutils-3.14.0.tgz#bf8d5a7bae5369331fa0f2b0a5a10bd7f7396c77"
   integrity sha512-SmzGbB0l+8I0QwsPgjooFRaRvHLBLNYM8SeQ0k6rtNDru5sCGeLJcZdwilNndN+GysuFjF5EIYgN8GfFG6UeUw==

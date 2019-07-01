@@ -22,5 +22,3 @@ test({
         assertEquals(parse(FIXTURE), ASSERTS);
     },
 });
-
-runTests();

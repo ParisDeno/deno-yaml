@@ -3,7 +3,7 @@
 import { asserts, testing } from './devDeps.ts';
 import { stringify } from './mod.ts';
 
-const { test, runTests } = testing;
+const { test } = testing;
 const { assertEquals } = asserts;
 
 test({
@@ -27,17 +27,15 @@ test({
         };
 
         const ASSERTS = `foo:
-          bar: true
-          test:
-            - a
-            - b
-            - a: false
-            - a: false
-        test: foobar
-        `;
+  bar: true
+  test:
+    - a
+    - b
+    - a: false
+    - a: false
+test: foobar
+`;
 
         assertEquals(stringify(FIXTURE), ASSERTS);
     },
 });
-
-runTests();

@@ -13,8 +13,7 @@
       ],
       "plugins": [
         {
-          // "name": "typescript-deno-plugin"
-          "name": "/source/deno/typescript-deno-plugin"
+          "name": "typescript-deno-plugin"
         }
       ]
     }
