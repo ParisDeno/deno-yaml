@@ -222,15 +222,20 @@ const STYLE_PLAIN = 1,
 //    STYLE_PLAIN or STYLE_SINGLE => no \n are in the string.
 //    STYLE_LITERAL => no lines are suitable for folding (or lineWidth is -1).
 //    STYLE_FOLDED => a line > lineWidth and can be folded (and lineWidth != -1).
-function chooseScalarStyle(string, singleLineOnly, indentPerLevel, lineWidth, testAmbiguousType) {
-    let i;
-    let char;
-    let hasLineBreak = false;
-    let hasFoldableLine = false; // only checked if shouldTrackWidth
+function chooseScalarStyle(
+    string: string,
+    singleLineOnly: boolean,
+    indentPerLevel: number,
+    lineWidth: number,
+    testAmbiguousType: (...args: any[]) => any,
+) {
     const shouldTrackWidth = lineWidth !== -1;
-    let previousLineBreak = -1; // count the first line correctly
-    let plain = isPlainSafeFirst(string.charCodeAt(0)) && !isWhitespace(string.charCodeAt(string.length - 1));
+    let hasLineBreak = false,
+        hasFoldableLine = false, // only checked if shouldTrackWidth
+        previousLineBreak = -1, // count the first line correctly
+        plain = isPlainSafeFirst(string.charCodeAt(0)) && !isWhitespace(string.charCodeAt(string.length - 1));
 
+    let char: number, i: number;
     if (singleLineOnly) {
         // Case: no block styles.
         // Check for disallowed characters to rule out plain and single.
@@ -625,7 +630,7 @@ function detectType(state: DumperState, object: any, explicit = false) {
             state.tag = explicit ? type.tag : '?';
 
             if (type.represent) {
-                style = state.styleMap.get(type.tag) || type.defaultStyle;
+                style = state.styleMap[type.tag] || type.defaultStyle;
 
                 if (_toString.call(type.represent) === '[object Function]') {
                     _result = (type.represent as RepresentFn)(object, style);
@@ -648,7 +653,7 @@ function detectType(state: DumperState, object: any, explicit = false) {
 // Serializes `object` and writes it to global `result`.
 // Returns true on success, or false on invalid object.
 //
-function writeNode(state: DumperState, level: number, object: string, block, compact, iskey = false) {
+function writeNode(state: DumperState, level: number, object: any, block: boolean, compact: boolean, iskey = false) {
     state.tag = null;
     state.dump = object;
 
@@ -683,7 +688,7 @@ function writeNode(state: DumperState, level: number, object: string, block, com
         }
         if (type === '[object Object]') {
             if (block && Object.keys(state.dump).length !== 0) {
-                writeBlockMapping(state, level, (state.dump as unknown) as object, compact);
+                writeBlockMapping(state, level, state.dump, compact);
                 if (duplicate) {
                     state.dump = `&ref_${duplicateIndex}${state.dump}`;
                 }
@@ -761,7 +766,7 @@ function inspectNode(object: object, objects: object[], duplicatesIndexes: numbe
     }
 }
 
-export function dump(input, options?: DumperStateOptions) {
+export function dump(input: any, options?: DumperStateOptions) {
     options = options || {};
 
     const state = new DumperState(options);
@@ -773,6 +778,6 @@ export function dump(input, options?: DumperStateOptions) {
     return '';
 }
 
-export function safeDump(input, options?: DumperStateOptions) {
+export function safeDump(input: object, options?: DumperStateOptions) {
     return dump(input, { schema: DEFAULT_SAFE_SCHEMA, ...options });
 }

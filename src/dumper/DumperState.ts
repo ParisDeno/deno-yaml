@@ -1,15 +1,20 @@
 import { Schema, SchemaDefinition } from '../Schema.ts';
 import { State } from '../State.ts';
 import { StyleVariant, Type } from '../Type.ts';
+import { ArrayObject } from '../utils.ts';
 
 const _hasOwnProperty = Object.prototype.hasOwnProperty;
 
-function compileStyleMap(schema: Schema, map: Map<string, string> = null) {
-    const result = new Map<string, StyleVariant>();
-    if (map === null) return result;
+function compileStyleMap(schema: Schema, map: ArrayObject<StyleVariant> = null) {
+    if (map === null) return {};
 
     let type: Type;
-    for (let [tag, style] of map.entries()) {
+    const result: ArrayObject<StyleVariant> = {};
+    const keys = Object.keys(map);
+    let tag: string, style: StyleVariant;
+    for (let index = 0, length = keys.length; index < length; index += 1) {
+        tag = keys[index];
+        style = String(map[tag]) as StyleVariant;
         if (tag.slice(0, 2) === '!!') {
             tag = `tag:yaml.org,2002:${tag.slice(2)}`;
         }
@@ -19,7 +24,7 @@ function compileStyleMap(schema: Schema, map: Map<string, string> = null) {
             style = type.styleAliases[style];
         }
 
-        result.set(tag, style as StyleVariant);
+        result[tag] = style;
     }
 
     return result;
@@ -35,7 +40,7 @@ export interface DumperStateOptions {
     /** specifies level of nesting, when to switch from block to flow style for collections. -1 means block style everwhere */
     flowLevel?: number;
     /** Each tag may have own set of styles.	- "tag" => "style" map. */
-    styles?: Map<string, string>;
+    styles?: ArrayObject<StyleVariant>;
     /** specifies a schema to use. */
     schema?: SchemaDefinition;
     /** if true, sort keys when dumping YAML. If a function, use the function to sort the keys. (default: false) */
@@ -69,7 +74,7 @@ export class DumperState extends State {
     public result: string = '';
     public duplicates = [];
     public usedDuplicates = null;
-    public styleMap: Map<string, StyleVariant>;
+    public styleMap: ArrayObject<StyleVariant>;
     public dump: any;
 
     constructor({

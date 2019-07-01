@@ -1,7 +1,20 @@
-import { stringifySync } from '../mod.ts';
+import { stringify } from '../mod.ts';
 
 console.log(
-    stringifySync({
+    stringify({
+        foo: {
+            bar: true,
+            test: [
+                'a',
+                'b',
+                {
+                    a: false,
+                },
+                {
+                    a: false,
+                },
+            ],
+        },
         test: 'foobar',
     }),
 );

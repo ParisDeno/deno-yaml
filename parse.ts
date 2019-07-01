@@ -1,11 +1,12 @@
-import { safeLoad, safeLoadAll } from './src/loader/loader.ts';
+import { CbFunction, safeLoad, safeLoadAll } from './src/loader/loader.ts';
+import { LoaderStateOptions } from './src/loader/LoaderState.ts';
 
-const { DenoError, ErrorKind } = Deno;
+export type ParseOptions = LoaderStateOptions;
 
-export async function parse(content: string): Promise<any> {
-    throw new DenoError(ErrorKind.Other, 'Not yet implemented.');
+export function parse(content: string, options?: ParseOptions) {
+    return safeLoad(content, options);
 }
 
-export function parseSync(content: string): any {
-    return safeLoad(content);
+export function parseAll(content: string, iterator?: CbFunction, options?: ParseOptions) {
+    return safeLoadAll(content, iterator, options);
 }

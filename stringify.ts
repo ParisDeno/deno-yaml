@@ -1,11 +1,8 @@
 import { safeDump } from './src/dumper/dumper.ts';
+import { DumperStateOptions } from './src/dumper/DumperState.ts';
 
-const { DenoError, ErrorKind } = Deno;
+export type DumpOptions = DumperStateOptions;
 
-export async function stringify(obj: any): Promise<any> {
-    throw new DenoError(ErrorKind.Other, 'Not yet implemented.');
-}
-
-export function stringifySync(obj: any): string {
-    return safeDump(obj);
+export function stringify(obj: any, options?: DumpOptions) {
+    return safeDump(obj, options);
 }

@@ -1490,7 +1490,7 @@ function loadDocuments(input: string, options?: LoaderStateOptions) {
     return state.documents;
 }
 
-type CbFunction = (doc: any) => void;
+export type CbFunction = (doc: any) => void;
 function isCbFunction(fn: any): fn is CbFunction {
     return typeof fn === 'function';
 }
