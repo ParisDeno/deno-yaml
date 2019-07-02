@@ -1,5 +1,5 @@
 import { YAMLError } from '../error/YAMLError.ts';
-import { DEFAULT_FULL_SCHEMA, DEFAULT_SAFE_SCHEMA } from '../schema/mod.ts';
+import { DEFAULT_SAFE_SCHEMA } from '../schema/mod.ts';
 import { RepresentFn, StyleVariant, Type } from '../Type.ts';
 import * as common from '../utils.ts';
 import { DumperState, DumperStateOptions } from './DumperState.ts';

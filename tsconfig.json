@@ -8,6 +8,8 @@
       "resolveJsonModule": true,
       "strict": true,
       "target": "esnext",
+      "noUnusedLocals": true,
+      "noUnusedParameters": true,
       "lib": [
         "esnext"
       ],

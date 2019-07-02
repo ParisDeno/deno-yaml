@@ -25,3 +25,6 @@ indent_size = 2
 
 [*.lock]
 indent_size = 2
+
+[*.yml]
+indent_size = 2
