@@ -3,7 +3,7 @@
 import { asserts, testing } from './devDeps.ts';
 import { parse } from './mod.ts';
 
-const { test, runTests } = testing;
+const { test } = testing;
 const { assertEquals } = asserts;
 
 test({
