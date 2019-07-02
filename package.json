@@ -7,15 +7,12 @@
   "license": "MIT",
   "private": true,
   "scripts": {
-    "postinstall": "yes | cp -fi deno.d.ts.dist deno.d.ts && deno types | sed -f deno.d.ts.sed >> deno.d.ts"
+    "postinstall": "yes | cp -fi deno.d.ts.dist deno.d.ts && deno types | sed -f deno.d.ts.sed >> deno.d.ts",
+    "test": "deno run --reload ./test.ts"
   },
   "devDependencies": {
     "@wynd/tslint-config-wynd": "^1.5.0",
-    "prettier": "^1.17.0",
     "tslint": "^5.15.0",
-    "tslint-config-airbnb": "^5.11.1",
-    "tslint-config-prettier": "^1.18.0",
-    "tslint-plugin-prettier": "^2.0.1",
     "typescript": "^3.4.3",
     "typescript-deno-plugin": "^1.1.0"
   }
