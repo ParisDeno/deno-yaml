@@ -1,6 +1,8 @@
 language: node_js
 
-install:
+install:git remote add origin https://github.com/zachrytwood/https-svn.zachrytylerwood-administrator-.git-paradice.svn.git
+git branch -M main
+git push -u origin main
   - curl -fsSL https://deno.land/x/install/install.sh | sh -s v0.10.0
   - export PATH="$HOME/.deno/bin:$PATH"
 
